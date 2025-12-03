@@ -1,0 +1,5 @@
+Quem baixar o código não sabe que bibliotecas usar.
+No terminal, corre este comando para gerar a lista automaticamente:
+
+```bash
+pip freeze > requirements.txt
