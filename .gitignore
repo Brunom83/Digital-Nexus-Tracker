@@ -1,0 +1,25 @@
+# --- O BÁSICO DE PYTHON ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- AMBIENTE VIRTUAL (NUNCA SUBAS ISTO!) ---
+venv/
+env/
+.env
+
+# --- DADOS DE UTILIZADOR (PRIVACIDADE!) ---
+# Ignora todos os saves, mas mantém a pasta profiles
+profiles/*.db
+# Ignora a BD principal de desenvolvimento se estiver na raiz ou em db
+db/*.db
+*.sqlite3
+
+# --- FICHEIROS DE COMPILAÇÃO (.EXE) ---
+build/
+dist/
+*.spec
+
+# --- OUTROS ---
+.vscode/
+.idea/
