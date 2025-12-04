@@ -1,51 +1,42 @@
-# 🦖 Digital Nexus Tracker (DMO)
+# 🦖 Digital Nexus Tracker (Unofficial)
 
-Uma aplicação desktop moderna para gestão de progresso no servidor privado *Digital Nexus Online* (DMO).
-Desenvolvido em **Python** com **PySide6** (Qt) e **SQLite**.
+![Status](https://img.shields.io/badge/Version-1.0-blue) ![Python](https://img.shields.io/badge/Python-3.10+-yellow) ![License](https://img.shields.io/badge/License-MIT-green)
 
-![Screenshot da App](https://via.placeholder.com/800x450?text=Coloca+aqui+um+Print+do+Dashboard) 
-*(Dica: Tira um print do Dashboard e mete na pasta do projeto, depois linka aqui!)*
+Uma aplicação desktop completa para gerir progresso, economia e tarefas no servidor privado **Digital Nexus Online** (DMO).
+Desenvolvido para eliminar a necessidade de folhas de Excel e facilitar o *min-maxing* do jogo.
 
-## 🚀 Funcionalidades
+---
 
-* **📊 Dashboard Financeiro:** Monitoriza pontos (Easy, Normal, Hard) e calcula o progresso para o próximo nível VIP.
-* **🛒 Gestão de Lojas:** Adiciona itens das lojas do jogo manualmente, com imagens e preços dinâmicos.
-* **📋 Coleção & Seals:** Importa e gere a tua checklist de Digimons e Selos (AT, HP, DE, etc.).
-* **⚔️ Dungeon Tracker:** Regista as tuas runs e histórico de ganhos.
-* **🧮 Calculadora de Grind:** Descobre exatamente quantas runs precisas para comprar aquele item de 30k pontos.
-* **💾 Sistema de Perfis:** Suporte para múltiplos utilizadores (Login Local).
+## 📸 Screenshots
 
-## 🛠️ Instalação (Para Developers)
+![Dashboard](screenshots/dashboard.png)
+*(O teu Dashboard Financeiro com cálculo de VIP)*
 
-1.  **Clone o repositório:**
-    ```bash
-    git clone [https://github.com/Brunom83/Digital-Nexus-Tracker.git](https://github.com/Brunom83/Digital-Nexus-Tracker.git)
-    cd Digital-Nexus-Tracker
-    ```
+---
 
-2.  **Crie um ambiente virtual (Recomendado):**
-    ```bash
-    python -m venv venv
-    # Windows:
-    .\venv\Scripts\activate
-    # Linux/Mac:
-    source venv/bin/activate
-    ```
+## 🔥 Funcionalidades Principais
 
-3.  **Instale as dependências:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+* **👑 Gestor de Economia VIP:** Calcula automaticamente quantos pontos (Easy/Normal/Hard) faltam para o próximo nível VIP.
+* **🛒 Lojas Dinâmicas:** Adiciona itens e preços manualmente conforme o servidor atualiza (com suporte a imagens).
+* **💾 Sistema de Backup:** Importa/Exporta o teu progresso via JSON. Nunca percas o save.
+* **📅 Daily & Weekly Tasks:** Checklist com reset automático para não perderes tickets.
+* **🎨 Temas Visuais:** Escolhe entre o modo "Teku" (Azul) ou "Racing Drones" (Verde Oficial).
+* **🦕 Coleção & Seals:** Monitoriza quais Digimons e Selos já desbloqueaste.
 
-4.  **Execute a aplicação:**
-    ```bash
-    python src/app.py
-    ```
+## 🛠️ Tecnologias Usadas
 
-## 📦 Como criar o Executável (.exe)
+* **Linguagem:** Python 3
+* **Interface:** PySide6 (Qt for Python)
+* **Base de Dados:** SQLite3
+* **Ícones:** QtAwesome (FontAwesome)
+* **Build:** PyInstaller
 
-Para compilar a aplicação para Windows:
+## 🚀 Como Usar
 
-```bash
-pip install pyinstaller
-pyinstaller --noconsole --onedir --name="DMOTracker" --add-data "data;data" src/app.py
+1.  Baixa a versão mais recente em "Releases".
+2.  Extrai a pasta.
+3.  Executa o `DMOTracker.exe`.
+4.  Cria o teu perfil e começa a farmar!
+
+---
+*Desenvolvido por [Vicius](https://github.com/Brunom83)*
