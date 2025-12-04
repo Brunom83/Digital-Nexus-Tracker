@@ -4,9 +4,9 @@ import sqlite3
 import os
 import sys
 import pandas as pd
+import json # <--- IMPORTANTE
 from database_manager import get_db_connection, create_tables
 
-# --- FUNÇÃO AUXILIAR PARA CAMINHOS (CRÍTICO PARA O .EXE) ---
 def get_resource_path(relative_path):
     """
     Obtém o caminho absoluto para recursos (data/db).
@@ -14,16 +14,12 @@ def get_resource_path(relative_path):
     como no executável final (PyInstaller/MEIPASS).
     """
     try:
-        # Se estiver a correr como .exe, o PyInstaller cria uma pasta temporária
         base_path = sys._MEIPASS
     except Exception:
-        # Se estiver a correr como script normal
         base_path = os.path.abspath(".")
 
-    # Tenta encontrar o caminho
     final_path = os.path.join(base_path, relative_path)
     
-    # Fallback: Se não encontrar, tenta subir um nível (comum em dev)
     if not os.path.exists(final_path):
         return os.path.join(os.path.abspath("."), relative_path)
         
@@ -32,13 +28,10 @@ def get_resource_path(relative_path):
 class DigimonViewModel:
     def __init__(self, profile_name="default"):
         self.profile = profile_name
-        # 1. Garante que as tabelas existem para este perfil
         create_tables(self.profile)
-        # 2. Se a BD estiver vazia, preenche com os dados dos CSVs
         self._seed_database()
 
     def _get_conn(self):
-        """Helper para obter a conexão do perfil atual de forma rápida."""
         return get_db_connection(self.profile)
 
     # =========================================================================
@@ -48,37 +41,32 @@ class DigimonViewModel:
         conn = self._get_conn()
         if conn is None: return
 
-        # Verifica se já existem digimons na coleção
         try:
             res = conn.execute("SELECT COUNT(*) as c FROM digimon_collection").fetchone()
             count = res['c'] if res else 0
         except: count = 0
         
-        # Se estiver vazio (0), vamos importar!
         if count == 0:
-            print(f"🌱 [SEED] A importar dados iniciais para o perfil '{self.profile}'...")
+            print(f"🌱 [SEED] Importing initial data for profile '{self.profile}'...")
             self._import_csv_digimons(conn)
             self._import_csv_seals(conn)
-            print("✅ [SEED] Importação concluída!")
+            print("✅ [SEED] Import completed!")
 
     def _import_csv_digimons(self, conn):
-        # Procura o ficheiro na pasta data
         csv_path = get_resource_path(os.path.join('data', 'DigiHatch Tracker.csv'))
         
         if os.path.exists(csv_path):
             try:
-                # Lê o CSV com separador ';'
                 df = pd.read_csv(csv_path, sep=';').fillna('')
                 with conn:
                     for _, row in df.iterrows():
                         nome = row.get('Digital Monsters List', 'Unknown')
                         fonte = row.get('WHERE TO GET THEM', 'Unknown')
-                        # Insere na BD
                         conn.execute("INSERT OR IGNORE INTO digimon_collection (nome, hatch_status, cloned_status, fonte) VALUES (?, 0, 0, ?)", (nome, fonte))
             except Exception as e:
-                print(f"❌ Erro ao importar Digimons: {e}")
+                print(f"❌ Error importing Digimons: {e}")
         else:
-            print(f"⚠️ Aviso: Ficheiro não encontrado para Seed: {csv_path}")
+            print(f"⚠️ Warning: File not found: {csv_path}")
 
     def _import_csv_seals(self, conn):
         csv_path = get_resource_path(os.path.join('data', 'Seals Tracker.csv'))
@@ -89,17 +77,15 @@ class DigimonViewModel:
                 stats_map = ['AT', 'HP', 'DE', 'CT', 'HT', 'BL', 'EV', 'DS']
                 with conn:
                     for i, stat in enumerate(stats_map):
-                        # O CSV tem pares de colunas (Nome, Quantidade)
                         col_idx = i * 2
                         if col_idx < len(df.columns):
-                            # Pega na coluna do nome
                             subset = df.iloc[:, [col_idx]].dropna()
                             for _, row in subset.iterrows():
                                 name = row.iloc[0]
                                 if name and str(name).strip() != '':
                                     conn.execute("INSERT OR IGNORE INTO seal_tracker (digimon_nome, stat_type, count) VALUES (?, ?, 0)", (str(name), stat))
             except Exception as e:
-                print(f"❌ Erro ao importar Seals: {e}")
+                print(f"❌ Error importing Seals: {e}")
 
     # =========================================================================
     #  FUNCIONALIDADES: COLEÇÃO & SEALS
@@ -161,9 +147,6 @@ class DigimonViewModel:
             return True
 
     def process_run(self, dungeon_id):
-        """
-        Processa uma run: Adiciona pontos à carteira (com multiplicador VIP) e regista no histórico.
-        """
         conn = self._get_conn()
         with conn:
             d = conn.execute("SELECT * FROM dungeons WHERE id = ?", (dungeon_id,)).fetchone()
@@ -171,44 +154,32 @@ class DigimonViewModel:
             
             if not d: return
 
-            # Lógica VIP
             multiplier = w['vip_level'] + 1
             total_earned = d['base_points'] * multiplier
             
-            # Escolhe a moeda certa
             field = "points_easy"
             if d['difficulty'] == 'Normal': field = "points_normal"
             elif d['difficulty'] == 'Hard': field = "points_hard"
             
-            # Atualizações
             conn.execute("UPDATE dungeons SET run_count = run_count + 1 WHERE id = ?", (dungeon_id,))
             conn.execute(f"UPDATE player_wallet SET {field} = {field} + ? WHERE id = 1", (total_earned,))
             
-            # Log
             log_desc = f"Run: {d['name']} ({d['difficulty']})"
             log_change = f"+{total_earned} {d['difficulty']} (VIP x{multiplier})"
             conn.execute("INSERT INTO run_history (description, points_change) VALUES (?, ?)", (log_desc, log_change))
-            
             conn.commit()
 
     def try_upgrade_vip(self, method):
-        """Tenta subir de nível VIP gastando pontos."""
-        # Custos definidos
         costs = {'Easy': 30000, 'Normal': 20000, 'Hard': 10000}
         cost = costs.get(method)
         field = f"points_{method.lower()}"
-        
         conn = self._get_conn()
         with conn:
             w = conn.execute("SELECT * FROM player_wallet WHERE id = 1").fetchone()
-            
             if w['vip_level'] >= 5: return "Max Level"
             
             if w[field] >= cost:
-                # Paga e sobe nível
                 conn.execute(f"UPDATE player_wallet SET {field} = {field} - ?, vip_level = vip_level + 1 WHERE id = 1", (cost,))
-                
-                # Log
                 conn.execute("INSERT INTO run_history (description, points_change) VALUES (?, ?)", 
                              (f"UPGRADE VIP {w['vip_level']+1}", f"-{cost} {method}"))
                 conn.commit()
@@ -238,7 +209,6 @@ class DigimonViewModel:
             w = conn.execute("SELECT * FROM player_wallet WHERE id = 1").fetchone()
             
             if not item: return False
-            
             npc = item['npc_type']
             field = f"points_{npc.lower()}"
             
@@ -256,14 +226,25 @@ class DigimonViewModel:
             conn.commit()
 
     # =========================================================================
+    #  FUNCIONALIDADES: HISTÓRICO GERAL
+    # =========================================================================
+    def get_history(self):
+        with self._get_conn() as conn: 
+            return conn.execute("SELECT * FROM run_history ORDER BY timestamp DESC LIMIT 50").fetchall()
+    
+    def clear_history(self):
+        with self._get_conn() as conn: 
+            conn.execute("DELETE FROM run_history")
+            conn.commit()
+
+    # =========================================================================
     #  FUNCIONALIDADES: TAREFAS DIÁRIAS (DAILIES)
     # =========================================================================
     def get_tasks(self):
-        with self._get_conn() as conn: 
-            # Garante que a tabela existe, caso seja um update
-            try:
+        try:
+            with self._get_conn() as conn: 
                 return conn.execute("SELECT * FROM daily_tasks ORDER BY reset_type, name").fetchall()
-            except: return []
+        except: return []
     
     def add_task(self, name, rtype):
         try:
@@ -288,14 +269,55 @@ class DigimonViewModel:
             conn.execute("DELETE FROM daily_tasks WHERE id = ?", (tid,))
             conn.commit()
 
-    # =========================================================================
-    #  FUNCIONALIDADES: HISTÓRICO GERAL
-    # =========================================================================
-    def get_history(self):
-        with self._get_conn() as conn: 
-            return conn.execute("SELECT * FROM run_history ORDER BY timestamp DESC LIMIT 50").fetchall()
-    
-    def clear_history(self):
-        with self._get_conn() as conn: 
-            conn.execute("DELETE FROM run_history")
-            conn.commit()
+            # ==========================================
+    # 💾 A PARTE NOVA: BACKUP JSON
+    # ==========================================
+    def export_data_to_json(self, file_path):
+        data = {}
+        conn = self._get_conn()
+        conn.row_factory = sqlite3.Row
+        tables = ['digimon_collection', 'seal_tracker', 'dungeons', 'player_wallet', 'shop_items', 'daily_tasks', 'run_history']
+        try:
+            for table in tables:
+                try:
+                    rows = conn.execute(f"SELECT * FROM {table}").fetchall()
+                    data[table] = [dict(row) for row in rows]
+                except: data[table] = []
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=4, ensure_ascii=False)
+            return True
+        except Exception as e:
+            print(f"Export Error: {e}"); return False
+
+    def import_data_from_json(self, file_path):
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f: data = json.load(f)
+            conn = self._get_conn()
+            with conn:
+                if 'player_wallet' in data and data['player_wallet']:
+                    w = data['player_wallet'][0]
+                    conn.execute("DELETE FROM player_wallet")
+                    conn.execute("INSERT INTO player_wallet (id, vip_level, points_easy, points_normal, points_hard) VALUES (1, ?, ?, ?, ?)", (w.get('vip_level',0), w.get('points_easy',0), w.get('points_normal',0), w.get('points_hard',0)))
+                
+                tables_map = {
+                    'digimon_collection': "INSERT INTO digimon_collection (id, nome, hatch_status, cloned_status, fonte) VALUES (?, ?, ?, ?, ?)",
+                    'seal_tracker': "INSERT INTO seal_tracker (id, digimon_nome, stat_type, count) VALUES (?, ?, ?, ?)",
+                    'dungeons': "INSERT INTO dungeons (id, name, difficulty, base_points, run_count) VALUES (?, ?, ?, ?, ?)",
+                    'shop_items': "INSERT INTO shop_items (id, npc_type, item_name, cost, image_path) VALUES (?, ?, ?, ?, ?)",
+                    'daily_tasks': "INSERT INTO daily_tasks (id, name, reset_type, is_done) VALUES (?, ?, ?, ?)",
+                    'run_history': "INSERT INTO run_history (id, description, points_change, timestamp) VALUES (?, ?, ?, ?)"
+                }
+                
+                for table, query in tables_map.items():
+                    if table in data:
+                        conn.execute(f"DELETE FROM {table}")
+                        for row in data[table]:
+                            # Cria uma lista de valores baseada nos placeholders '?' da query
+                            # Isto é um pouco 'hacky' mas funciona se o JSON estiver limpo
+                            vals = list(row.values())
+                            # Ajuste de segurança: garantir que o nº de valores bate certo
+                            try: conn.execute(query, vals)
+                            except: pass # Ignora linhas corrompidas
+            return True
+        except Exception as e:
+            print(f"Import Error: {e}"); return False
