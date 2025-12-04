@@ -2,7 +2,7 @@
 
 ![Status](https://img.shields.io/badge/Version-1.0-blue) ![Python](https://img.shields.io/badge/Python-3.10+-yellow) ![License](https://img.shields.io/badge/License-MIT-green)
 
-Uma aplicação desktop completa para gerir progresso, economia e tarefas no servidor privado **Digital Nexus Online** (DMO).
+Uma aplicação desktop completa para gerir progresso, economia e tarefas no servidor privado **Digital Nexus Online** (DNO).
 Desenvolvido para eliminar a necessidade de folhas de Excel e facilitar o *min-maxing* do jogo.
 
 ---
@@ -20,7 +20,7 @@ Desenvolvido para eliminar a necessidade de folhas de Excel e facilitar o *min-m
 * **🛒 Lojas Dinâmicas:** Adiciona itens e preços manualmente conforme o servidor atualiza (com suporte a imagens).
 * **💾 Sistema de Backup:** Importa/Exporta o teu progresso via JSON. Nunca percas o save.
 * **📅 Daily & Weekly Tasks:** Checklist com reset automático para não perderes tickets.
-* **🎨 Temas Visuais:** Escolhe entre o modo "Teku" (Azul) ou "Racing Drones" (Verde Oficial).
+* **🎨 Temas Visuais:** Escolhe entre o modo Default (Azul) ou Nexus (Verde Oficial).
 * **🦕 Coleção & Seals:** Monitoriza quais Digimons e Selos já desbloqueaste.
 
 ## 🛠️ Tecnologias Usadas
